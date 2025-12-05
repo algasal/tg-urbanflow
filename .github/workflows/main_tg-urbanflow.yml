@@ -63,4 +63,5 @@ jobs:
         with:
           app-name: 'tg-urbanflow'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_2D778E4F41494F64B3CAD4AEDC1BA573 }}
+
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
