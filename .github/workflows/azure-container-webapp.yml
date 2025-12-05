@@ -1,7 +1,8 @@
 name: Build and deploy a container to an Azure Web App
 
 env:
-  AZURE_WEBAPP_NAME: tg-urbanflow
+  AZURE_WEBAPP_NAME: urbanflow
+  AZURE_WEBAPP_PACKAGE_PATH: "./publish"
 
 on:
   push:
@@ -62,4 +63,5 @@ jobs:
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
           images: ghcr.io/${{ env.REPO }}:${{ github.sha }}
