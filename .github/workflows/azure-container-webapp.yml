@@ -1,67 +1,35 @@
-name: Build and deploy a container to an Azure Web App
-
-env:
-  AZURE_WEBAPP_NAME: urbanflow
-  AZURE_WEBAPP_PACKAGE_PATH: "./publish"
+name: Deploy FastAPI to Azure Web App
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # GHCR Login using PAT (fixes "denied: installation not allowed" error)
-      - name: Log in to GitHub container registry
-        uses: docker/login-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
+          python-version: '3.12'
 
-      # Force repo name lowercase for GHCR
-      - name: Lowercase the repo name
+      - name: Install dependencies
+        working-directory: backend
         run: |
-          echo "REPO=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Build and push container image to registry
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          file: ./backend/Dockerfile
-          tags: ghcr.io/${{ env.REPO }}:${{ github.sha }}
+      - name: Zip deployment package
+        working-directory: backend
+        run: zip -r ../deploy.zip .
 
-  deploy:
-    permissions:
-      contents: none
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: 'Development'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
-    steps:
-      - name: Lowercase the repo name
-        run: |
-          echo "REPO=${GITHUB_REPOSITORY@L}" >> $GITHUB_ENV
-
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+      - name: Deploy to Azure WebApp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          app-name: urbanflow
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
-          images: ghcr.io/${{ env.REPO }}:${{ github.sha }}
+          package: ./deploy.zip
