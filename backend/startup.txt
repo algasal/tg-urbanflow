@@ -1,1 +1,1 @@
-gunicorn --bind=0.0.0.0 --timeout 120 server:app
+gunicorn -k uvicorn.workers.UvicornWorker backend.server:app
