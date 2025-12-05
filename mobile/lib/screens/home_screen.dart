@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _etaMessage = "Buscando informações...";
 
   /// FastAPI Backend
-  final String _backendUrl = 'http://127.0.0.1:8000';
+  final String _backendUrl = 'https://https://urbanflow.azurewebsites.net:8000';
 
   final Map<String, List<String>> lineDirections = {
     "L8" : ["Itapevi", "Julio Prestes"],
