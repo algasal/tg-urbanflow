@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from consulta_estacao import get_next_train, ESTACOES, LINHAS
 
+from routes.auth_routes import auth_router
+
 app = FastAPI(title="UrbanFlow Backend", version="1.0")
 
 app.add_middleware(
@@ -12,6 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 
 @app.get("/proximo-trem")
 def proximo_trem(linha: str, estacao: str):
@@ -47,4 +50,4 @@ def proximo_trem(linha: str, estacao: str):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="localhost", port=8000)
