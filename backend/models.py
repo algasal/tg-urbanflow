@@ -6,7 +6,6 @@ db = create_engine('postgresql://postgres:postgres@localhost:5432/postgres')
 
 Base = declarative_base()
 
-
 class Usuario(Base):
     __tablename__ = 'usuario'
 
