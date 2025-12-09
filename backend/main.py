@@ -1,13 +1,6 @@
-import os
-
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-
-load_dotenv()
-
-SECRET_KEY = os.getenv("SECRET_KEY")
 
 app = FastAPI(title="UrbanFlow Backend", version="1.0")
 
@@ -18,10 +11,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-import routes
+from auth_routes import auth_router
+from estacao_routes import estacao_router
 
-app.include_router(routes.auth_router)
-app.include_router(routes.estacao_router)
+app.include_router(auth_router)
+app.include_router(estacao_router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
