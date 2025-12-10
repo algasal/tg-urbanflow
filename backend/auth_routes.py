@@ -2,21 +2,15 @@ from fastapi import HTTPException, APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from dependencies import pegar_sessao, verificar_token
+from dependencies import pegar_sessao
 from schemas import UsuarioSchema, LoginSchema
-from security import bcrypt_context, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY
+from security import bcrypt_context, verificar_token, criar_token, autenticar_usuario
 
 from models import Usuario
-from jose import jwt
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
-def criar_token(id_usuario, duracao_token=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
-    data_expiracao = datetime.now(timezone.utc) + duracao_token
-    dic_info = {"sub": str(id_usuario), "exp": data_expiracao}
-    jwt_codificado = jwt.encode(dic_info, SECRET_KEY, algorithm=ALGORITHM)
-    return jwt_codificado
 
 @auth_router.post("/login")
 async def login(login_schema: LoginSchema, session: Session = Depends(pegar_sessao)):
@@ -44,14 +38,6 @@ async def login_form(dados_formulario: OAuth2PasswordRequestForm = Depends(), se
         "access_token": access_token,
         "token_type": "Bearer"
     }
-
-def autenticar_usuario(session, username, password):
-    usuario_opt = session.query(Usuario).filter(Usuario.email == username).first()
-    if not usuario_opt:
-        raise HTTPException(status_code=400, detail="Email não registrado.")
-    if not bcrypt_context.verify(password, usuario_opt.senha):
-        raise HTTPException(status_code=400, detail="Email e/ou Senha incorretos(a).")
-    return usuario_opt
 
 @auth_router.post("/register")
 async def register(usuario_schema: UsuarioSchema, session: Session = Depends(pegar_sessao)):
