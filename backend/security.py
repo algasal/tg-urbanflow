@@ -1,14 +1,23 @@
-import os
-
-from dotenv import load_dotenv
-from fastapi.security import OAuth2PasswordBearer
+# security.py
 from passlib.context import CryptContext
+from datetime import datetime, timedelta
+from jose import jwt
 
-load_dotenv()
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+SECRET_KEY = "UM-SEGREDO-BEM-FORTE-AQUI"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24h
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_schema = OAuth2PasswordBearer(tokenUrl="auth/login")
 
+def criar_token(dados: dict):
+    dados_copy = dados.copy()
+    exp = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    dados_copy.update({"exp": exp})
+    token = jwt.encode(dados_copy, SECRET_KEY, algorithm=ALGORITHM)
+    return token
+
+def verificar_senha(senha_plana, senha_hash):
+    return bcrypt_context.verify(senha_plana, senha_hash)
+
+def gerar_hash(senha_plana):
+    return bcrypt_context.hash(senha_plana)

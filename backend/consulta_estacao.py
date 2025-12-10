@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 import requests
 
 app = FastAPI(
@@ -71,7 +71,9 @@ LINHAS = {
 
 API_BASE = "https://apim-proximotrem-prd-brazilsouth-001.azure-api.net/api/v1"
 
+router = APIRouter()
 
+@router.get("/proximo-trem")
 def get_next_train(linha: str, estacao: str):
     url = f"{API_BASE}/lines/{linha}/stations/{estacao}/next-train"
 

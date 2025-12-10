@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -16,19 +21,80 @@ class _AuthScreenState extends State<AuthScreen> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
 
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+  bool isLogin = true;
+  bool loading = false;
 
-    // AQUI VOCÊ VAI CONECTAR COM SEU BACKEND PYTHON POSTERIORMENTE
-    // Por enquanto, vamos apenas simular um sucesso e ir para a próxima tela.
-    print('Email: ${_emailController.text}');
-    print('Senha: ${_passwordController.text}');
-    if (!_isLogin) print('Nome: ${_nameController.text}');
+  final String backendUrl = "http://localhost:8000/auth";
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
+  // ---------------------------
+  // FUNÇÕES FICAM AQUI DENTRO ⬇️
+  // ---------------------------
+
+  Future<void> fazerCadastro() async {
+    setState(() => loading = true);
+
+    final body = {
+      "nome": _nameController.text,
+      "email": _emailController.text,
+      "senha": _passwordController.text,
+    };
+
+    final resp = await http.post(
+      Uri.parse("$backendUrl/cadastrar"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(body),
     );
+
+    setState(() => loading = false);
+
+    if (resp.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Cadastro realizado com sucesso!")),
+      );
+
+      setState(() => isLogin = true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erro: ${resp.body}")),
+      );
+    }
   }
+
+  Future<void> fazerLogin() async {
+    setState(() => loading = true);
+
+    final body = {
+      "email": _emailController.text,
+      "senha": _passwordController.text,
+    };
+
+    final resp = await http.post(
+      Uri.parse("$backendUrl/login"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(body),
+    );
+
+    setState(() => loading = false);
+
+    if (resp.statusCode == 200) {
+      final json = jsonDecode(resp.body);
+      final token = json["access_token"];
+
+      // salvar token no SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("token", token);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erro: ${resp.body}")),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +162,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _submit,
+                        onPressed: isLogin ? fazerLogin : fazerCadastro,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue[800],
                           shape: RoundedRectangleBorder(

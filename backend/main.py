@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from consulta_estacao import router as consulta_router
 import uvicorn
 
 app = FastAPI(title="UrbanFlow Backend", version="1.0")
+app.include_router(consulta_router)
 
 app.add_middleware(
     CORSMiddleware,

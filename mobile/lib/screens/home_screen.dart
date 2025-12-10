@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _etaMessage = "Buscando informações...";
 
   /// FastAPI Backend
-  final String _backendUrl = 'https://https://urbanflow.azurewebsites.net:8000';
+  final String _backendUrl = 'http://localhost:8000';
 
   final Map<String, List<String>> lineDirections = {
     "L8" : ["Itapevi", "Julio Prestes"],
@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Consulta a API para verificar o próximo trem indo para a direção escolhida
-  Future<Map<String, dynamic>> _getNextTrain(String line, String stationCode) async {
+  Future<List<dynamic>> _getNextTrain(String line, String stationCode) async {
     final uri = Uri.parse("$_backendUrl/proximo-trem?linha=$line&estacao=$stationCode&sentido=$_currentDirection");
 
     try {
@@ -79,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final data = await _getNextTrain(station.line, station.apiCode);
 
     // Get the list of trains
-    final trains = data["proximo_trem"];
+    final trains = data;
 
     if (trains == null || trains is! List || trains.isEmpty) {
       setState(() => _etaMessage = "Nenhuma previsão no momento.");
@@ -117,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
   } catch (e) {
+    print(e);
     if (mounted) {
       setState(() => _etaMessage = "Erro ao ler dados do servidor.");
     }
