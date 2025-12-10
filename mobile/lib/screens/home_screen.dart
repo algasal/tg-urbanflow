@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import '../models/station_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _etaMessage = "Buscando informações...";
 
   /// FastAPI Backend
-  final String _backendUrl = 'http://localhost:8000';
+  final String _backendUrl = 'http://192.168.56.1:8000/estacao';
 
   final Map<String, List<String>> lineDirections = {
     "L8" : ["Itapevi", "Julio Prestes"],
@@ -46,18 +48,31 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  Future<String?> _getToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString("token");
+  }
+
   /// Consulta a API para verificar o próximo trem indo para a direção escolhida
-  Future<List<dynamic>> _getNextTrain(String line, String stationCode) async {
+  Future<Map<String, dynamic>> _getNextTrain(String line, String stationCode) async {
     final uri = Uri.parse("$_backendUrl/proximo-trem?linha=$line&estacao=$stationCode&sentido=$_currentDirection");
 
     try {
-      final resp = await http.get(uri).timeout(const Duration(seconds: 10));
+      //final resp = await http.get(uri).timeout(const Duration(seconds: 10));
+      final token = await _getToken();
+      final resp = await http.get(
+        uri,
+        headers: {
+          "Authorization" : "Bearer $token",
+          "Content-Type" : "application/json",
+        },
+      ).timeout(const Duration(seconds: 10));
 
       if (resp.statusCode != 200) {
         throw Exception("Erro: ${resp.body}");
       }
 
-      return json.decode(resp.body);
+      return json.decode(resp.body) as Map<String, dynamic>;
     } catch (e) {
       throw Exception("Falha ao conectar: $e");
     }
@@ -74,26 +89,23 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchNextTrain(station);
   }
 
-  Future<void> _fetchNextTrain(Station station) async {
+  /*Future<void> _fetchNextTrain(Station station) async {
   try {
     final data = await _getNextTrain(station.line, station.apiCode);
+    print("DEBUG DATA: $data");
+
 
     // Get the list of trains
     final trains = data;
 
-    if (trains == null || trains is! List || trains.isEmpty) {
+    if (trains.isEmpty) {
       setState(() => _etaMessage = "Nenhuma previsão no momento.");
       return;
     }
 
-    if (_directionIndex >= trains.length) {
-      setState(() {
-        _etaMessage = "Sem previsão no momento.";
-      });
-      return;
-    }
+    
 
-    final selected = trains[_directionIndex];
+    final selected = trains;
 
     final int? minutes = selected["proximo_em"];
     final String? chegada = selected["hora_previsto_chegada"];
@@ -116,6 +128,47 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _etaMessage = msg);
     }
 
+  } catch (e) {
+    print(e);
+    if (mounted) {
+      setState(() => _etaMessage = "Erro ao ler dados do servidor.");
+    }
+  }
+}*/
+
+Future<void> _fetchNextTrain(Station station) async {
+  try{
+
+    final data = await _getNextTrain(station.line, station.apiCode);
+    print(data);
+    final List<dynamic> trains = data["proximo_trem"] ?? [];
+
+    if (trains.isEmpty) {
+      setState(() => _etaMessage = "Nenhuma previsão no momento.");
+      return;
+    }
+
+    // pega o trem mais próximo (menor proximo_em)
+// Usa o índice do sentido (0 = ida, 1 = volta)
+    final selected = trains[_directionIndex];
+
+    final int? minutes = selected["proximo_em"];
+    final String? chegada = selected["hora_previsto_chegada"];
+    final String status = selected["status"] ?? "";
+    final String estacao_atual_cod = selected["estacao_origem_trem"] ?? "";
+    final String estacao_atual_name = stationByCode[estacao_atual_cod]?.name ?? estacao_atual_cod;
+
+    String msg = "";
+
+    // monta mensagem
+    msg += "Próximo trem em: ${minutes ?? '---'} segundos\n";
+    msg += "Chegada prevista: ${chegada ?? '---'}\n";
+    msg += "Status: $status\n";
+    msg += "Trem atualmente em: $estacao_atual_name\n";
+
+    if (mounted) {
+      setState(() => _etaMessage = msg);
+    }
   } catch (e) {
     print(e);
     if (mounted) {
@@ -443,6 +496,7 @@ void _showStationsByLine(String line) {
 
   void _showDirectionDialog() {
     final directions = lineDirections[_selectedStation!.line];
+    print(directions);
 
     if (directions == null || directions.length != 2) {
       return;

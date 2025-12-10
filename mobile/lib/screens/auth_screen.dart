@@ -14,14 +14,14 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  bool _isLogin = true;
   final _formKey = GlobalKey<FormState>();
   
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  String? erroLogin;
 
-  bool isLogin = true;
+  bool _isLogin = true;
   bool loading = false;
 
   final String backendUrl = "http://localhost:8000/auth";
@@ -40,7 +40,7 @@ class _AuthScreenState extends State<AuthScreen> {
     };
 
     final resp = await http.post(
-      Uri.parse("$backendUrl/cadastrar"),
+      Uri.parse("$backendUrl/register"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode(body),
     );
@@ -52,7 +52,7 @@ class _AuthScreenState extends State<AuthScreen> {
         const SnackBar(content: Text("Cadastro realizado com sucesso!")),
       );
 
-      setState(() => isLogin = true);
+      setState(() => _isLogin = true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Erro: ${resp.body}")),
@@ -61,7 +61,10 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> fazerLogin() async {
-    setState(() => loading = true);
+    setState(() { 
+    loading = true;
+    erroLogin=null;
+  });
 
     final body = {
       "email": _emailController.text,
@@ -89,9 +92,9 @@ class _AuthScreenState extends State<AuthScreen> {
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro: ${resp.body}")),
-      );
+      setState(() {
+        erroLogin = "Usuário ou senha incorreto";
+      });
     }
   }
 
@@ -158,11 +161,23 @@ class _AuthScreenState extends State<AuthScreen> {
                           : null,
                     ),
                     const SizedBox(height: 24),
+                    if (erroLogin != null) 
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        erroLogin!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                     SizedBox(
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: isLogin ? fazerLogin : fazerCadastro,
+                        onPressed: _isLogin ? fazerLogin : fazerCadastro,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue[800],
                           shape: RoundedRectangleBorder(
