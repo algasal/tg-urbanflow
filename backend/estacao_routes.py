@@ -1,8 +1,9 @@
-from fastapi import HTTPException, APIRouter
+from fastapi import HTTPException, APIRouter, Depends
 
 from consulta_estacao import LINHAS, ESTACOES, get_next_train
+from security import verificar_token
 
-estacao_router = APIRouter(prefix="/estacao", tags=["estacao"])
+estacao_router = APIRouter(prefix="/estacao", tags=["estacao"], dependencies=[Depends(verificar_token)])
 
 @estacao_router.get("/proximo-trem")
 def proximo_trem(linha: str, estacao: str):
